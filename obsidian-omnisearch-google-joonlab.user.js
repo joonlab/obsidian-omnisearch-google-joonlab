@@ -6,7 +6,7 @@
 // @updateURL    https://raw.githubusercontent.com/joonlab/obsidian-omnisearch-google-joonlab/main/obsidian-omnisearch-google-joonlab.user.js
 // @homepageURL  https://github.com/joonlab/obsidian-omnisearch-google-joonlab
 // @supportURL   https://github.com/joonlab/obsidian-omnisearch-google-joonlab/issues
-// @version      0.15.0-joonlab
+// @version      0.16.0-joonlab
 // @description  Injects Obsidian Omnisearch results into Google — multi-vault via split per-vault settings (port/name/deeplink/color/root, no hardcoded paths), Advanced-URI option for reliable cross-vault open, per-vault card tint, relevance bars, tag/matched-term chips, copy name/rel/abs path, keyboard nav, themes.
 // @author       박준 (JoonLab)
 // @contributor  Simon Cambier (original "Obsidian Omnisearch in Google" — https://github.com/scambier/userscripts)
@@ -347,6 +347,15 @@
 
     // ---------- styles ----------
     const injectStyles = () => {
+        // JoonLab: load Pretendard (Korean-optimized font) from CDN. google.com's CSP has no
+        // style-src / font-src / default-src, so an external stylesheet link is allowed here.
+        if (!document.getElementById("om-pretendard-font")) {
+            const lf = document.createElement("link");
+            lf.id = "om-pretendard-font";
+            lf.rel = "stylesheet";
+            lf.href = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable-dynamic-subset.css";
+            (document.head || document.documentElement).appendChild(lf);
+        }
         const style = document.createElement("style");
         style.textContent = `
             #${ID} {
@@ -355,7 +364,7 @@
                 --muted:#5f6368; --faint:#9aa0a6; --sel:rgba(19,69,56,0.08);
                 --hdr:#44474c; --hdr-rgb:68,71,76; /* header text: neutral gray (toned-down) */
                 margin:20px 0; width:100%; min-width:360px; box-sizing:border-box;
-                font-family:Roboto, Arial, sans-serif;
+                font-family:"Pretendard Variable", Pretendard, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
             }
             /* ---- Theme presets (light values; dark overrides below) ---- */
             #${ID}.theme-obsidian { --accent:#1B0CAB; --accent-rgb:27,12,171; --tint:#F2F6FF; --sel:rgba(27,12,171,0.08); }
@@ -366,6 +375,7 @@
             #${ID}.theme-rose     { --accent:#be123c; --accent-rgb:190,18,60;  --tint:#fbe9ed; --sel:rgba(190,18,60,0.08); }
             #${ID}.theme-grape    { --accent:#7c3aed; --accent-rgb:124,58,237; --tint:#f1ebfb; --sel:rgba(124,58,237,0.08); }
             #${ID}.theme-slate    { --accent:#475569; --accent-rgb:71,85,105;  --tint:#eef1f5; --sel:rgba(71,85,105,0.08); }
+            #${ID}.theme-lg       { --accent:#A50034; --accent-rgb:165,0,52;   --tint:#F6EDEF; --sel:rgba(165,0,52,0.07); --hdr:#6B6B6B; --hdr-rgb:107,107,107; }
             @media (prefers-color-scheme: dark) {
                 #${ID} {
                     --accent:#E985A2; --accent-rgb:233,133,162; --tint:#2C303D;
@@ -381,6 +391,7 @@
                 #${ID}.theme-rose     { --accent:#fb7185; --accent-rgb:251,113,133; --tint:#2C303D; }
                 #${ID}.theme-grape    { --accent:#c084fc; --accent-rgb:192,132,252; --tint:#2C303D; }
                 #${ID}.theme-slate    { --accent:#94a3b8; --accent-rgb:148,163,184; --tint:#2C303D; }
+                #${ID}.theme-lg       { --accent:#E25575; --accent-rgb:226,85,117; --tint:#23262E; --hdr:#BFC3C8; --hdr-rgb:191,195,200; }
             }
 
             /* Header — neutral toned-down text/icons; only the logo mark keeps the accent color */
@@ -538,7 +549,7 @@
             #om-toast {
                 position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px);
                 background:#202124; color:#fff; padding:8px 14px; border-radius:8px; font-size:13px;
-                font-family:Roboto, Arial, sans-serif; box-shadow:0 4px 16px rgba(0,0,0,0.3);
+                font-family:"Pretendard Variable", Pretendard, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif; box-shadow:0 4px 16px rgba(0,0,0,0.3);
                 opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:99999;
                 max-width:60vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
             }
@@ -582,7 +593,7 @@
             v1_port:  { section: ["Vault 1", "볼트마다 한 칸. Port를 비우면 그 슬롯은 사용 안 함."], label: "Port", type: "text", default: "51361", title: "이 볼트의 Omnisearch HTTP 포트. 비우면 슬롯 비활성." },
             v1_name:  { label: "Display name (badge)", type: "text", default: "Main", title: "결과 카드 배지에 표시할 볼트 이름 (예: Main, Wiki)." },
             v1_vault: { label: "Obsidian vault name for deeplink (blank = auto-detect)", type: "text", default: "", title: "deeplink에 쓸 Obsidian 등록 볼트명. 비우면 Omnisearch가 준 값 사용." },
-            v1_color: { label: "Color hex (blank = auto)", type: "text", default: "#E39AAB", title: "이 볼트의 배지/카드 색 (#RRGGBB). 비우면 이름 해시로 자동." },
+            v1_color: { label: "Color hex (blank = auto)", type: "text", default: "#D8456A", title: "이 볼트의 배지/카드 색 (#RRGGBB). 비우면 이름 해시로 자동. (LG 테마 선택 시 자동으로 덮어씀)" },
             v1_root:  { label: "Filesystem root for 'copy abs path' (blank = off)", type: "text", default: "", title: "abs 경로 복사용 절대경로 루트. 보통은 아래 '공통 부모 폴더' 하나면 충분." },
             v1_lrPort: { label: "Local REST API port (blank = off)", type: "text", default: "", title: "이 볼트 Local REST API(HTTP) 포트. body+태그 정확 표시용. General의 'Use Local REST API' 켜야 동작." },
             v1_lrKey:  { label: "Local REST API key", type: "text", default: "", title: "이 볼트 Local REST API 키(Bearer). 플러그인 설정에서 복사." },
@@ -590,7 +601,7 @@
             v2_port:  { section: ["Vault 2"], label: "Port", type: "text", default: "51362" },
             v2_name:  { label: "Display name (badge)", type: "text", default: "Wiki" },
             v2_vault: { label: "Obsidian vault name for deeplink (blank = auto-detect)", type: "text", default: "" },
-            v2_color: { label: "Color hex (blank = auto)", type: "text", default: "#86C2A6" },
+            v2_color: { label: "Color hex (blank = auto)", type: "text", default: "#B89A5E" },
             v2_root:  { label: "Filesystem root for 'copy abs path' (blank = off)", type: "text", default: "" },
             v2_lrPort: { label: "Local REST API port (blank = off)", type: "text", default: "" },
             v2_lrKey:  { label: "Local REST API key", type: "text", default: "" },
@@ -637,7 +648,7 @@
             cleanFrontmatter: { label: "Strip frontmatter from preview", type: "checkbox", default: true, title: "미리보기에서 YAML(태그·작성자·날짜·wikilink 등) 제거하고 본문 위주로." },
             exactMatch: { label: "Exact match (wrap query in quotes)", type: "checkbox", default: false, title: "검색어를 따옴표로 묶어 정확 매칭." },
             excludeFolders: { label: "Exclude paths containing (comma-separated)", type: "text", default: "", title: "경로에 이 문자열이 포함된 결과 제외(콤마로 여러 개)." },
-            theme: { label: "Accent theme", type: "select", options: ["Ocean", "CMDS", "Obsidian", "Mono", "Forest", "Sunset", "Rose", "Grape", "Slate"], default: "Ocean", title: "기본 색 테마(헤더·단일볼트·fallback). Ocean=블루, CMDS=그린/핑크, Obsidian=퍼플, Mono=중립, Forest=그린, Sunset=오렌지, Rose=레드핑크, Grape=보라, Slate=청회색. 라이트/다크 자동." },
+            theme: { label: "Accent theme", type: "select", options: ["LG", "Ocean", "CMDS", "Obsidian", "Mono", "Forest", "Sunset", "Rose", "Grape", "Slate"], default: "LG", title: "기본 색 테마(헤더·단일볼트·fallback). LG=LG Red 브랜드(선택 시 볼트색 레드/골드 자동), Ocean=블루, CMDS=그린/핑크, Obsidian=퍼플, Mono=중립, Forest=그린, Sunset=오렌지, Rose=레드핑크, Grape=보라, Slate=청회색. 라이트/다크 자동." },
             skin: { label: "Card style", type: "select", options: ["Clean", "Tinted", "Solid", "Flat"], default: "Clean", title: "카드 스타일. Clean=솔리드+볼트색 좌측보더(추천), Tinted=볼트색 은은한 틴트(예전), Solid=틴트·보더 없음, Flat=구분선만(가장 가벼움)." },
             vaultColorScope: { label: "Vault color scope", type: "select", options: ["Accent", "Full"], default: "Accent", title: "볼트색 적용 범위. Accent=포인트(닷·배지·보더·바·태그)만 색, 제목은 읽기 좋은 중립색(추천). Full=제목·하이라이트까지 볼트색(진하고 모노톤)." },
             titleColor: { label: "Note title color (hex)", type: "text", default: "#94E2D5", title: "노트 제목 글자색(#RRGGBB). Accent 스코프=모든 제목에 적용(비우면 중립), Full 스코프=볼트색 우선." },
@@ -749,6 +760,13 @@
         S.keyboardNav = !!gmc.get("keyboardNav");
         S.showControlsDefault = !!gmc.get("showControlsDefault");
         S.requestTimeout = Math.max(500, parseInt(gmc.get("requestTimeout"), 10) || 5000);
+
+        // JoonLab LG theme: auto-apply on-brand vault colors (Red / Gold / Silver / Gray / Bronze / Wine
+        // cycle), so picking the "LG" theme is enough — no need to set each vault color by hand.
+        if (String(S.theme || "").toLowerCase() === "lg") {
+            const LG_VAULT = ["#D8456A", "#B89A5E", "#8A8D8F", "#A8703A", "#6B6B6B", "#9C5C73"];
+            S.vaults.forEach((v, i) => { v.color = LG_VAULT[i % LG_VAULT.length]; });
+        }
     }
 
     const logo = `<svg height="1em" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 256 256">
@@ -1103,7 +1121,7 @@
     }
 
     // ---------- boot ----------
-    console.log("Loading Omnisearch injector JoonLab v0.15.0");
+    console.log("Loading Omnisearch injector JoonLab v0.16.0");
 
     onInit(gmc).then(async () => {
         loadSettings();
@@ -1121,7 +1139,7 @@
         bindKeyboard();
         runSearch();
 
-        console.log("Loaded Omnisearch injector JoonLab v0.15.0");
+        console.log("Loaded Omnisearch injector JoonLab v0.16.0");
 
         // keep widget pinned to chosen edge if Google injects more cards
         waitForKeyElements(sidebarSelector, () => {
