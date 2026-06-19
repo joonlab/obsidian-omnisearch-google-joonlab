@@ -1,16 +1,16 @@
 "use strict";
 // ==UserScript==
-// @name         Obsidian Omnisearch in Google — CMDS
-// @namespace    https://github.com/johnfkoo951/obsidian-omnisearch-google-cmds
+// @name         Obsidian Omnisearch in Google — JoonLab
+// @namespace    https://github.com/joonlab/obsidian-omnisearch-google-joonlab
 // @downloadURL  https://raw.githubusercontent.com/joonlab/obsidian-omnisearch-google-joonlab/main/obsidian-omnisearch-google-joonlab.user.js
 // @updateURL    https://raw.githubusercontent.com/joonlab/obsidian-omnisearch-google-joonlab/main/obsidian-omnisearch-google-joonlab.user.js
 // @homepageURL  https://github.com/joonlab/obsidian-omnisearch-google-joonlab
 // @supportURL   https://github.com/joonlab/obsidian-omnisearch-google-joonlab/issues
-// @version      0.14.0-joonlab
+// @version      0.15.0-joonlab
 // @description  Injects Obsidian Omnisearch results into Google — multi-vault via split per-vault settings (port/name/deeplink/color/root, no hardcoded paths), Advanced-URI option for reliable cross-vault open, per-vault card tint, relevance bars, tag/matched-term chips, copy name/rel/abs path, keyboard nav, themes.
-// @author       구요한 (CMDSPACE)
+// @author       박준 (JoonLab)
 // @contributor  Simon Cambier (original "Obsidian Omnisearch in Google" — https://github.com/scambier/userscripts)
-// @contributor  박준 (JoonLab) — fork maintainer: new-tab open (newLeaf) + bring Obsidian to foreground
+// @contributor  구요한 (CMDSPACE) — multi-vault / Local REST / theming base fork
 // @license      MIT  (this fork; original is unlicensed — see README. Credit retained to the original author.)
 // @match        https://google.com/*
 // @match        https://www.google.com/*
@@ -124,7 +124,7 @@
             timeout: S.requestTimeout,
             onload: (r) => {
                 if (r.status >= 300) {
-                    console.warn("[Omnisearch CMDS] /open", r.status, "→ falling back to deeplink");
+                    console.warn("[Omnisearch JoonLab] /open", r.status, "→ falling back to deeplink");
                 }
                 // REST /open opens the note in a *background* window; also fire the obsidian:// deeplink
                 // to bring Obsidian to the foreground. On success it focuses the already-open tab
@@ -248,13 +248,13 @@
                 timeout: S.requestTimeout,
                 onload: (r) => {
                     if (r.status < 200 || r.status >= 300) {
-                        console.warn("[Omnisearch CMDS] Local REST", r.status, base, (r.responseText || "").slice(0, 120));
+                        console.warn("[Omnisearch JoonLab] Local REST", r.status, base, (r.responseText || "").slice(0, 120));
                         resolve(null); return;
                     }
                     try { resolve(JSON.parse(r.response)); } catch (e) { resolve(null); }
                 },
-                onerror: (e) => { console.warn("[Omnisearch CMDS] Local REST connection failed →", base, "(HTTPS self-signed? enable the plugin's HTTP server and use that port)"); resolve(null); },
-                ontimeout: () => { console.warn("[Omnisearch CMDS] Local REST timeout →", base); resolve(null); },
+                onerror: (e) => { console.warn("[Omnisearch JoonLab] Local REST connection failed →", base, "(HTTPS self-signed? enable the plugin's HTTP server and use that port)"); resolve(null); },
+                ontimeout: () => { console.warn("[Omnisearch JoonLab] Local REST timeout →", base); resolve(null); },
             });
         });
     }
@@ -297,7 +297,7 @@
             const card = cards.eq(i);
             fetchNote({ port: item._restPort, key: item._restKey }, item.path).then((note) => {
                 if (!note) return;
-                if (!_restShape) { _restShape = true; console.log("[Omnisearch CMDS] Local REST note keys:", Object.keys(note), "| tags:", note.tags, "| frontmatter.tags:", (note.frontmatter || {}).tags); }
+                if (!_restShape) { _restShape = true; console.log("[Omnisearch JoonLab] Local REST note keys:", Object.keys(note), "| tags:", note.tags, "| frontmatter.tags:", (note.frontmatter || {}).tags); }
                 if (note.content) card.find(".om-excerpt").html(bodyPreview(note.content, query));
                 if (S.showTags) {
                     const tags = notesTags(note).slice(0, S.maxTags);
@@ -805,7 +805,7 @@
             responses.forEach((arr, i) => {
                 if (arr === null) return;
                 const cfg = ports[i];
-                if (arr[0]) console.log(`[Omnisearch CMDS] port ${cfg.port} → vault "${arr[0].vault}" (deeplink uses "${cfg.dvault || arr[0].vault}")`);
+                if (arr[0]) console.log(`[Omnisearch JoonLab] port ${cfg.port} → vault "${arr[0].vault}" (deeplink uses "${cfg.dvault || arr[0].vault}")`);
                 for (const it of arr) {
                     const key = (it.vault || "") + "|" + (it.path || "");
                     if (seen.has(key)) continue;
@@ -858,7 +858,7 @@
         const container = $(`
             <div id="${ID}" class="theme-${S.theme.toLowerCase()} skin-${(S.skin || "Clean").toLowerCase()} vscope-${(S.vaultColorScope || "Accent").toLowerCase()}">
                 <div class="om-header">
-                    <span class="om-h-title">${logo}<span>Omnisearch by CMDS</span></span>
+                    <span class="om-h-title">${logo}<span>Omnisearch by JoonLab</span></span>
                     <span class="om-count" style="display:none">0</span>
                     <span class="om-h-actions">
                         <button class="om-icon-btn om-toggle-controls" title="Filters">⚙</button>
@@ -1103,7 +1103,7 @@
     }
 
     // ---------- boot ----------
-    console.log("Loading Omnisearch injector CMDS v0.13.3");
+    console.log("Loading Omnisearch injector JoonLab v0.15.0");
 
     onInit(gmc).then(async () => {
         loadSettings();
@@ -1121,7 +1121,7 @@
         bindKeyboard();
         runSearch();
 
-        console.log("Loaded Omnisearch injector CMDS v0.13.3");
+        console.log("Loaded Omnisearch injector JoonLab v0.15.0");
 
         // keep widget pinned to chosen edge if Google injects more cards
         waitForKeyElements(sidebarSelector, () => {

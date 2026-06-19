@@ -1,4 +1,4 @@
-# Obsidian Omnisearch in Google — JoonLab fork
+# Obsidian Omnisearch in Google — JoonLab
 
 A Tampermonkey/Violentmonkey **userscript** that injects [Obsidian](https://obsidian.md)
 [Omnisearch](https://github.com/scambier/obsidian-omnisearch) results into the Google
@@ -15,7 +15,7 @@ This is **박준 (JoonLab)'s personal fork**, maintained for my own setup and cu
 - **Base fork** — 구요한 (CMDSPACE):
   [johnfkoo951/obsidian-omnisearch-google-cmds](https://github.com/johnfkoo951/obsidian-omnisearch-google-cmds)
   — multi-vault fan-out, Local REST enrichment, themes, UI.
-- **This fork** — 박준 (JoonLab): the changes below.
+- **This fork** — 박준 (JoonLab): the changes below + rebrand.
 
 All credit for the concept and the heavy lifting goes to the upstream authors. MIT
 (see `LICENSE`), attribution retained.
@@ -28,6 +28,7 @@ All credit for the concept and the heavy lifting goes to the upstream authors. M
    `obsidian://open` deeplink is fired to raise the Obsidian window (it focuses the
    already-open tab, so no duplicate is created). On REST failure, the deeplink opens
    the note directly as before.
+3. **Rebrand** — name / author / widget header → JoonLab.
 
 ## Install
 
@@ -52,6 +53,10 @@ All credit for the concept and the heavy lifting goes to the upstream authors. M
 General: **Use Local REST API for body + tags** = ON. Common parent folder of vaults set
 so "copy abs path" works. Both vault windows must stay open for both to answer.
 
-> Note: `@name`/`@namespace` are intentionally kept identical to the CMDS base so that an
-> in-place update preserves existing Tampermonkey settings and avoids a duplicate widget.
-> Only the update/download source points here.
+## Updating without losing settings
+
+Tampermonkey settings (vault ports/keys/toggles) are bound to the installed script's
+internal id, not its name. To pick up a new version **after editing this repo**, use
+Tampermonkey → **"Check for userscript updates"** — it updates the existing script in
+place (by `@updateURL`), so your settings are preserved. (Re-opening the raw URL after a
+name change would create a *second* script instead; prefer "Check for updates".)
